@@ -1,0 +1,86 @@
+from schema.json import RootSchema, Professor
+from schema.solver_schema import SolverCourse
+
+from datetime import datetime, timedelta
+
+
+def parse_time_range(time_range: str) -> tuple[int, datetime, datetime]:
+    """Parses a time range string into day, start time, and end time."""
+    day, start_str, end_str = time_range.split(":")
+    day = int(day)
+    start_time = datetime.strptime(start_str, "%H%M")
+    end_time = datetime.strptime(end_str, "%H%M")
+    return day, start_time, end_time
+
+
+def generate_time_slots(
+    day: int,
+    start_time: datetime,
+    end_time: datetime,
+    duration: timedelta,
+    is_preferred: bool,
+    proff_id:int,
+) -> list[str]:
+    """Generates time slots of given duration within the specified time range."""
+    slots = []
+    current_time = start_time
+    while current_time + duration <= end_time:
+        next_time = current_time + duration
+        slot = f"{day}:{current_time.strftime('%H%M')}:{next_time.strftime('%H%M')}:{int(is_preferred)}:{proff_id}"
+        slots.append(slot)
+        current_time = next_time
+    return slots
+
+
+def get_professor_slots(prof: Professor, duration: str) -> list[str]:
+    """Returns the sum of all of its ranges in slots of specified duration."""
+    duration_hours, duration_minutes = int(duration[:2]), int(duration[2:])
+    duration_delta = timedelta(hours=duration_hours, minutes=duration_minutes)
+    all_slots = []
+
+    for day_range in prof.days:
+        day, start_time, end_time = parse_time_range(day_range)
+        is_preferred = day in prof.pref_days
+        slots = generate_time_slots(
+            day, start_time, end_time, duration_delta, is_preferred,proff_id=prof.id
+        )
+        all_slots.extend(slots)
+
+    return all_slots
+
+
+def json_parser(data: RootSchema):
+    """converts incommig json data to solver data input schema
+
+    [(
+        101,
+        [
+            "0,0800,0930,100",
+            "1,1500,1630,200",
+        ],
+        10,
+    ),
+    (
+        102,
+        [
+            "0,0800,0930,100",
+            "0,0930,1100,100",
+            "0,1300,1430,100",
+            "2,1500,1630,200",
+        ],
+        10,
+    )]
+
+    :param data: _description_
+    :type data: RootSchema
+    """
+    solver_data: list[tuple[int, list[str], int]] = []
+    for course in data.data.courses:
+        solver_c = SolverCourse(id=course.id, semister=course.semister)
+        for proff_id in course.professors:
+            for proffesor in data.data.professors:
+                if not proffesor.id == proff_id:
+                    continue
+                solver_c.slots.extend(get_professor_slots(proffesor, course.duration))
+        solver_data.append((solver_c.id, solver_c.slots, solver_c.semister))
+    return solver_data

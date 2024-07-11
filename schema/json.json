@@ -1,0 +1,38 @@
+{
+    "data": {
+      "professors": [
+        {
+          "id": 10,
+          "name": "full name",
+          "pref_days": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "days": [
+            "<day:int>:<start:hhmm>:<end:hhmm>",
+            "0:1030:1100",
+            "6:0800:1700",
+            "0:1500:1700"
+          ]
+        }
+      ],
+      "courses": [
+        {
+          "id": 1000,
+          "name": "math",
+          "units": 3,
+          "duration": "hhmm",
+          "semister": 2,
+          "professors": [
+            10,
+            20,
+            30
+          ]
+        }
+      ]
+    }
+  }
