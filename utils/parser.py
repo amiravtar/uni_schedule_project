@@ -26,7 +26,7 @@ def generate_time_slots(
     current_time = start_time
     while current_time + duration <= end_time:
         next_time = current_time + duration
-        slot = f"{day}:{current_time.strftime('%H%M')}:{next_time.strftime('%H%M')}:{int(is_preferred)}:{proff_id}"
+        slot = f"{day},{current_time.strftime('%H%M')},{next_time.strftime('%H%M')},{proff_id},{int(is_preferred)}"
         slots.append(slot)
         current_time = next_time
     return slots
@@ -49,24 +49,24 @@ def get_professor_slots(prof: Professor, duration: str) -> list[str]:
     return all_slots
 
 
-def json_parser(data: RootSchema):
-    """converts incommig json data to solver data input schema
+def convert_json_schema_to_model_data(data: RootSchema) -> list[tuple[int, list[str], int]]:
+    """converts incommig json(with root schema) data to solver data input schema
 
     [(
         101,
         [
-            "0,0800,0930,100",
-            "1,1500,1630,200",
+            "0,0800,0930,100,1",
+            "1,1500,1630,200,1",
         ],
         10,
     ),
     (
         102,
         [
-            "0,0800,0930,100",
-            "0,0930,1100,100",
-            "0,1300,1430,100",
-            "2,1500,1630,200",
+            "0,0800,0930,100,0",
+            "0,0930,1100,100,0",
+            "0,1300,1430,100,0",
+            "2,1500,1630,200,1",
         ],
         10,
     )]

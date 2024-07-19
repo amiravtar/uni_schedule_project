@@ -8,7 +8,6 @@ from ortools.sat.python import cp_model
 
 # from data_min import COURSES
 # from data_min2 import COURSES
-from data_2 import COURSES
 
 logger = logging.getLogger()
 DURATION_PER_UNIT = 45
@@ -40,6 +39,7 @@ def minutes_to_time(total_minutes: int):
     hours = total_minutes // 60
     minutes = total_minutes % 60
     return str(hours * 100 + minutes).zfill(4)
+
 
 
 def parse_courses(courses: list[tuple[int, list[str], int]]) -> dict[int, Course]:
@@ -142,7 +142,7 @@ class ModelSolver:
             course_times = list()
             for time in v.times:
                 bool_variables[(k, time)] = model.new_bool_var(
-                    f"bool_course_{k}_day_{time.day}_start_{time.start}_end_{time.end}_prof_{time.prof}"
+                    f"bool_course_{k}_day_{time.day}_start_{minutes_to_time(time.start)}_end_{minutes_to_time(time.end)}_prof_{time.prof}_prefered_{time.prefered}"
                 )
                 if time.prefered:
                     bool_variables_prefered.append(bool_variables[(k, time)])
@@ -151,7 +151,7 @@ class ModelSolver:
                     size=time.end - time.start,
                     end=int(str(time.day + 1) + str(time.end)),
                     is_present=bool_variables[(k, time)],
-                    name=f"bool_course_{k}_day_{time.day}_start_{time.start}_end_{time.end}_prof_{time.prof}",
+                    name=f"bool_course_{k}_day_{time.day}_start_{minutes_to_time(time.start)}_end_{minutes_to_time(time.end)}_prof_{time.prof}_prefered_{time.prefered}",
                 )
                 course_times.append(bool_variables[(k, time)])
             model.add_exactly_one(course_times)
@@ -195,12 +195,12 @@ class ModelSolver:
 
         model.maximize(sum(bool_variables_prefered))
         solver = cp_model.CpSolver()
-        # Enumerate all solutions.
         # solver.parameters.enumerate_all_solutions = True
-        sol_print = printer(bool_variables, interval_variables, model)
+        # sol_print = printer(bool_variables, interval_variables, model)
         # sol_print = printer(bool_variables, interval_variables, model, save_last=False)
-        stat = solver.solve(model)
+
         for i in range(self.num_solution):
+            stat = solver.solve(model)
             if stat == cp_model.INFEASIBLE:
                 logger.info("INFEASIBLE")
                 break
@@ -211,11 +211,8 @@ class ModelSolver:
                 break
             # if stat in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
             #     print("optimal,fes")
-            stat = solver.solve(model, sol_print)
             sol_vars = list()
             last_sol = list()
-            if len(sol_print.last_sol) != len(data):
-                raise
             for (id, timeprof), variable in bool_variables.items():
                 if solver.value(variable):
                     sol_vars.append(variable)
@@ -239,11 +236,12 @@ class ModelSolver:
         return self.soloutins
 
 
-data = parse_courses(COURSES)
-
-Mo = ModelSolver(data=data, num_solution=100)
-
 if __name__ == "__main__":
+    from data_2 import COURSES
+
+    data = parse_courses(COURSES)
+
+    Mo = ModelSolver(data=data, num_solution=100)
     sols = Mo.solve()
     for i in sols:
         for j in i:

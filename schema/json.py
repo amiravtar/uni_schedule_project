@@ -1,11 +1,13 @@
-from typing import List
-from pydantic import BaseModel, Field
+from typing import Any
+from pydantic import BaseModel
+
 
 class Professor(BaseModel):
     id: int
     name: str
-    pref_days: List[int]
-    days: List[str]
+    pref_days: list[int]
+    days: list[str]
+
 
 class Course(BaseModel):
     id: int
@@ -13,11 +15,31 @@ class Course(BaseModel):
     units: int
     duration: str
     semister: int
-    professors: List[int]
+    professors: list[int]
+
 
 class Data(BaseModel):
-    professors: List[Professor]
-    courses: List[Course]
+    professors: list[Professor]
+    courses: list[Course]
+
 
 class RootSchema(BaseModel):
     data: Data
+    settings: dict[str, Any]
+
+
+class ResualtCourse(BaseModel):
+    id: int
+    name: str
+    units: int
+    duration: str
+    semister: int
+    day: int
+    start: str
+    end: str
+    professor_id: int
+    is_prefered_time: bool
+
+
+class ModelResualt(BaseModel):
+    resualts: list[list[ResualtCourse]]
