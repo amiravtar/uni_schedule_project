@@ -24,7 +24,7 @@ def parse_json():
             else 100
         )
         Mo = ModelSolver(data=parse_courses(data), num_solution=number_solution)
-        sols: list[list[tuple[int, TimeProf]]] = Mo.solve()
+        sols: list[list[tuple[str, TimeProf]]] = Mo.solve()
         resualt = ModelResualt(resualts=list(list()))
         for i in sols:
             sol_coruses = list()
