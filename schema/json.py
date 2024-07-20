@@ -3,19 +3,19 @@ from pydantic import BaseModel
 
 
 class Professor(BaseModel):
-    id: int
+    id: str
     name: str
     pref_days: list[int]
     days: list[str]
 
 
 class Course(BaseModel):
-    id: int
+    id: str
     name: str
     units: int
     duration: str
     semister: int
-    professors: list[int]
+    professors: list[str]
 
 
 class Data(BaseModel):
@@ -29,7 +29,7 @@ class RootSchema(BaseModel):
 
 
 class ResualtCourse(BaseModel):
-    id: int
+    id: str
     name: str
     units: int
     duration: str
