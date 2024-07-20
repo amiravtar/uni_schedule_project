@@ -1,12 +1,14 @@
 # Example usage with Flask
 from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
 from schema.json import RootSchema, ModelResualt, ResualtCourse
 from utils.parser import convert_json_schema_to_model_data
 from solver.solver import ModelSolver, parse_courses, TimeProf, minutes_to_time
 
 app = Flask(__name__)
+cors = CORS(app)
 
-
+@cross_origin()
 @app.route("/api/calc", methods=["POST"])
 def parse_json():
     try:
@@ -22,7 +24,7 @@ def parse_json():
             else 100
         )
         Mo = ModelSolver(data=parse_courses(data), num_solution=number_solution)
-        sols: list[list[tuple[int, TimeProf]]] = Mo.solve()
+        sols: list[list[tuple[str, TimeProf]]] = Mo.solve()
         resualt = ModelResualt(resualts=list(list()))
         for i in sols:
             sol_coruses = list()
@@ -31,7 +33,7 @@ def parse_json():
                     if not course.id == id:
                         continue
                     resualt_course = ResualtCourse(
-                        id=int(id),
+                        id=id,
                         name=course.name,
                         units=course.units,
                         duration=course.duration,

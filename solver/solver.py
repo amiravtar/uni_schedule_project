@@ -21,7 +21,7 @@ TimeProf = namedtuple(
 
 @dataclass
 class Course:
-    id: int
+    id: str
     group: int
     times: list[TimeProf]
     unit: int
@@ -41,9 +41,8 @@ def minutes_to_time(total_minutes: int):
     return str(hours * 100 + minutes).zfill(4)
 
 
-
-def parse_courses(courses: list[tuple[int, list[str], int]]) -> dict[int, Course]:
-    data: dict[int, Course] = dict()
+def parse_courses(courses: list[tuple[str, list[str], int]]) -> dict[str, Course]:
+    data: dict[str, Course] = dict()
     for i in courses:
         c = Course(id=i[0], group=i[2], times=list(), unit=3)
         time_slotes_set = set()
@@ -123,19 +122,19 @@ class printer(cp_model.CpSolverSolutionCallback):
 
 
 class ModelSolver:
-    def __init__(self, data: dict[int, Course], num_solution: int = 50) -> None:
-        self.data = data
+    def __init__(self, data: dict[str, Course], num_solution: int = 50) -> None:
+        self.data: dict[str, Course] = data
         self.num_solution = num_solution
         self.soloutins = []
 
-    def solve(self) -> list[list[tuple[int, TimeProf]]]:
+    def solve(self) -> list[list[tuple[str, TimeProf]]]:
         self.soloutins.clear()
         # struct
         # prof:3 day:1 start:4
         model = cp_model.CpModel()
         # Model the problem
-        interval_variables: dict[tuple[int, TimeProf], cp_model.IntervalVar] = {}
-        bool_variables: dict[tuple[int, TimeProf], cp_model.IntVar] = {}
+        interval_variables: dict[tuple[str, TimeProf], cp_model.IntervalVar] = {}
+        bool_variables: dict[tuple[str, TimeProf], cp_model.IntVar] = {}
         bool_variables_prefered: list[cp_model.IntVar] = []
         # Creat all Variables
         for k, v in self.data.items():
@@ -173,7 +172,7 @@ class ModelSolver:
             model.add_cumulative(group_intervals, demands, 1)
 
         # Creat professor constraints
-        professor_data: dict[int, list[tuple[TimeProf, int]]] = {}
+        professor_data: dict[str, list[tuple[TimeProf, str]]] = {}
         for prof, items in groupby(
             sorted(
                 [
@@ -238,7 +237,6 @@ class ModelSolver:
 
 if __name__ == "__main__":
     from data_2 import COURSES
-
     data = parse_courses(COURSES)
 
     Mo = ModelSolver(data=data, num_solution=100)

@@ -49,7 +49,7 @@ def get_professor_slots(prof: Professor, duration: str) -> list[str]:
     return all_slots
 
 
-def convert_json_schema_to_model_data(data: RootSchema) -> list[tuple[int, list[str], int]]:
+def convert_json_schema_to_model_data(data: RootSchema) -> list[tuple[str, list[str], int]]:
     """converts incommig json(with root schema) data to solver data input schema
 
     [(
@@ -74,7 +74,7 @@ def convert_json_schema_to_model_data(data: RootSchema) -> list[tuple[int, list[
     :param data: _description_
     :type data: RootSchema
     """
-    solver_data: list[tuple[int, list[str], int]] = []
+    solver_data: list[tuple[str, list[str], int]] = []
     for course in data.data.courses:
         solver_c = SolverCourse(id=course.id, semister=course.semister)
         for proff_id in course.professors:
