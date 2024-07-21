@@ -1,7 +1,8 @@
-from schema.json import RootSchema, Professor
+from schema.json import RootSchema, Professor, ModelResualt, ResualtCourse, ResualtDict
 from schema.solver_schema import SolverCourse
 
 from datetime import datetime, timedelta
+from solver.solver import TimeProf, minutes_to_time
 
 
 def parse_time_range(time_range: str) -> tuple[int, datetime, datetime]:
@@ -19,7 +20,7 @@ def generate_time_slots(
     end_time: datetime,
     duration: timedelta,
     is_preferred: bool,
-    proff_id:int,
+    proff_id: str,
 ) -> list[str]:
     """Generates time slots of given duration within the specified time range."""
     slots = []
@@ -42,14 +43,43 @@ def get_professor_slots(prof: Professor, duration: str) -> list[str]:
         day, start_time, end_time = parse_time_range(day_range)
         is_preferred = day in prof.pref_days
         slots = generate_time_slots(
-            day, start_time, end_time, duration_delta, is_preferred,proff_id=prof.id
+            day, start_time, end_time, duration_delta, is_preferred, proff_id=prof.id
         )
         all_slots.extend(slots)
 
     return all_slots
 
 
-def convert_json_schema_to_model_data(data: RootSchema) -> list[tuple[str, list[str], int]]:
+def convert_model_resualt_to_json(
+    sols: list[list[tuple[str, TimeProf, int]]], parsed_json_data: RootSchema
+) -> ModelResualt:
+    resualt = ModelResualt(resualts=list())
+    for i in sols:
+        sol_coruses = list()
+        for id, timeslot, score in i:
+            for course in parsed_json_data.data.courses:
+                if not course.id == id:
+                    continue
+                resualt_course = ResualtCourse(
+                    id=id,
+                    # name=course.name,
+                    # units=course.units,
+                    # duration=course.duration,
+                    # semister=int(timeslot.group),
+                    day=int(timeslot.day),
+                    start=str(minutes_to_time(timeslot.start)),
+                    end=str(minutes_to_time(timeslot.end)),
+                    professor_id=str(timeslot.prof),
+                    is_prefered_time=bool(timeslot.prefered),
+                )
+                sol_coruses.append(resualt_course)
+        resualt.resualts.append(ResualtDict(score=score, courses=sol_coruses))
+    return resualt
+
+
+def convert_json_schema_to_model_data(
+    data: RootSchema,
+) -> list[tuple[str, list[str], int]]:
     """converts incommig json(with root schema) data to solver data input schema
 
     [(

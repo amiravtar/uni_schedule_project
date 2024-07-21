@@ -1,5 +1,6 @@
 from typing import Any
 from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 
 class Professor(BaseModel):
@@ -30,16 +31,21 @@ class RootSchema(BaseModel):
 
 class ResualtCourse(BaseModel):
     id: str
-    name: str
-    units: int
-    duration: str
-    semister: int
+    # name: str
+    # units: int
+    # duration: str
+    # semister: int
     day: int
     start: str
     end: str
-    professor_id: int
+    professor_id: str
     is_prefered_time: bool
 
 
+class ResualtDict(TypedDict):
+    score: int
+    courses: list[ResualtCourse]
+
+
 class ModelResualt(BaseModel):
-    resualts: list[list[ResualtCourse]]
+    resualts: list[ResualtDict]

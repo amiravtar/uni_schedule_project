@@ -47,7 +47,11 @@ def parse_courses(courses: list[tuple[str, list[str], int]]) -> dict[str, Course
         c = Course(id=i[0], group=i[2], times=list(), unit=3)
         time_slotes_set = set()
         for j in i[1]:
-            day, start, end, prof, prefered = map(int, j.split(","))
+            day, start, end, prof, prefered = j.split(",")
+            day = int(day)
+            start = int(start)
+            end = int(end)
+            prefered = int(prefered)
             min_start = convert_time_to_min(start)
             min_end = convert_time_to_min(end)
             duration = end - start
@@ -127,7 +131,7 @@ class ModelSolver:
         self.num_solution = num_solution
         self.soloutins = []
 
-    def solve(self) -> list[list[tuple[str, TimeProf]]]:
+    def solve(self) -> list[list[tuple[str, TimeProf, int]]]:
         self.soloutins.clear()
         # struct
         # prof:3 day:1 start:4
@@ -215,7 +219,8 @@ class ModelSolver:
             for (id, timeprof), variable in bool_variables.items():
                 if solver.value(variable):
                     sol_vars.append(variable)
-                    last_sol.append((id, timeprof))
+                    #TODO :Add score to it 
+                    last_sol.append((id, timeprof, 50))
             # for k, v in sol_print.last_sol:
             #     print(
             #         k[0],
@@ -237,6 +242,7 @@ class ModelSolver:
 
 if __name__ == "__main__":
     from data_2 import COURSES
+
     data = parse_courses(COURSES)
 
     Mo = ModelSolver(data=data, num_solution=100)
