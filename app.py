@@ -25,7 +25,7 @@ def parse_json():
         number_solution = (
             parsed_data.settings["number_solution"]
             if "number_solution" in parsed_data.settings
-            else 100
+            else 20
         )
         Mo = ModelSolver(data=parse_courses(data), num_solution=number_solution)
         sols: list[list[tuple[str, TimeProf,int]]] = Mo.solve()
