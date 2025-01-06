@@ -219,7 +219,7 @@ class ModelSolver:
             for (id, timeprof), variable in bool_variables.items():
                 if solver.value(variable):
                     sol_vars.append(variable)
-                    #TODO :Add score to it 
+                    # TODO :Add score to it
                     last_sol.append((id, timeprof, 50))
             # for k, v in sol_print.last_sol:
             #     print(
@@ -233,19 +233,19 @@ class ModelSolver:
             #     )
             #     sol_vars.append(v)
             model.add(sum(sol_vars) <= len(sol_vars) - 1)
-            # print(solver.user_time)
-            # print(solver.wall_time)
-            # print(sol_print.count)
+            print(solver.user_time)
             self.soloutins.append(last_sol)
         return self.soloutins
 
 
 if __name__ == "__main__":
-    from data_2 import COURSES
+    from mock_data import MockData
 
-    data = parse_courses(COURSES)
+    mock = MockData(num_courses=700, proffesor_cout=500,group_max=70,timeslot_per_course_min=5,timeslot_per_course_max=12)
+    input_data = mock.generate_data()
+    data = parse_courses(input_data)
 
-    Mo = ModelSolver(data=data, num_solution=100)
+    Mo = ModelSolver(data=data, num_solution=20)
     sols = Mo.solve()
     for i in sols:
         for j in i:
