@@ -7,6 +7,7 @@ from typing_extensions import (
     Annotated,  # Import Annotated for backward compatibility if needed
 )
 
+from app.core.dependencies import get_current_user
 from app.crud.major import (
     create_major,
     delete_major,
@@ -22,7 +23,7 @@ from app.schemas.major import MajorCreate, MajorRead
 # Define the annotated dependency
 SessionDep = Annotated[Session, Depends(get_session)]
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.post("/", response_model=MajorRead)

@@ -12,7 +12,16 @@ SessionDep = Annotated[Session, Depends(get_session)]
 router = APIRouter()
 
 
-@router.post("/register", response_model=dict)
+@router.post(
+    "/register",
+    response_model=dict,
+    responses={
+        400: {
+            "description": "User already exiest",
+            "content": {"application/json": {"example": {"detail": "Username already exists"}}},
+        },
+    },
+)
 def register(user: UserCreate, session: SessionDep):
     existing_user = get_user_by_username(session, user.username)
     if existing_user:
