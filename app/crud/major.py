@@ -18,7 +18,7 @@ def get_major(session: Session, major_id: int) -> Optional[Major]:
 
 def list_majors(session: Session) -> List[Major]:
     query = select(Major)
-    return session.exec(query).all()
+    return session.exec(query).all() # type: ignore
 
 
 def delete_major(session: Session, major_id: int) -> bool:
