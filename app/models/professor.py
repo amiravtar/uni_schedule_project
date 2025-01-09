@@ -4,10 +4,13 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
+from app.models.course import CourseProfessorLink
 from app.schemas.professors import TimeSlot, Weekday
 
 if TYPE_CHECKING:
     from app.models.major import Major
+
+    from .course import Course
 
 
 class Professor(SQLModel, table=True):
@@ -19,3 +22,7 @@ class Professor(SQLModel, table=True):
     preferred_days: List[Weekday] = Field(default=[], sa_column=Column(JSON))
     time_slots: List[TimeSlot] = Field(default=[], sa_column=Column(JSON))
     major: Optional["Major"] = Relationship(back_populates="professors")
+
+    courses: List["Course"] = Relationship(
+        back_populates="professors", link_model=CourseProfessorLink
+    )
