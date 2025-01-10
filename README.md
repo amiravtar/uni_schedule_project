@@ -25,3 +25,8 @@ docker compose -f docker-compose.yml up
 defualt port is 8000
 you can change it via:
 export APP_PORT=8001
+
+
+#‌TODO
+- [  ] Add some logs
+- [  ] Add some comments for codes and classses

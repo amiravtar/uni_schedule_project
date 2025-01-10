@@ -16,12 +16,13 @@ class CourseProfessorLink(SQLModel, table=True):
         foreign_key="professor.id", primary_key=True, default=None
     )
 
+
 class Course(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     title: str
-    units: int
+    units: int = Field(gt=0)
     duration: str  # Stored as "hh:mm" format
-    semester: int
+    semester: int = Field(gt=0, lt=11)
     calculated_hours: Decimal = Field(max_digits=2, decimal_places=1)
 
     major_id: int = Field(foreign_key="major.id")

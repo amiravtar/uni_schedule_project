@@ -44,7 +44,7 @@ def get_course(db: Session, course_id: int) -> Optional[Course]:
     return db.get(Course, course_id)
 
 
-def list_courses(db: Session, skip: int = 0, limit: int = 10) -> List[Course]:
+def list_courses(db: Session) -> List[Course]:
     query = select(Course)
     return db.exec(query).all()  # type: ignore
 

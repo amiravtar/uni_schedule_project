@@ -1,4 +1,4 @@
-ortools==9.10.4067
+ortools==9.11.4210
 fastapi==0.115.6
 uvicorn==0.34.0
 sqlmodel==0.0.22
