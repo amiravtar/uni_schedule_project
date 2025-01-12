@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from app.schemas.course import CourseRead
 from app.schemas.professors import ProfessorRead, TimeSlot, Weekday
-from app.schemas.solver import Cources as SolverSourses
+from app.schemas.solver import Courses as SolverSourses
 from app.schemas.solver import CourceTimeSlots
 from schema.json import ModelResualt, Professor, ResualtCourse, ResualtDict, RootSchema
 from solver.solver import TimeProf, minutes_to_time
@@ -89,7 +89,7 @@ def convert_course_read_list_to_solver_course_list(
     for course in input_courses:
         solver_course = SolverSourses(
             id=course.id,
-            calculated_hours=course.calculated_hours,
+            calculated_hours=int(course.calculated_hours * 100),
             duration=course.duration,
             major_id=course.major_id,
             classroom_id=course.classroom_id,

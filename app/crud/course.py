@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 from app.crud.classroom import get_classroom
@@ -45,7 +46,11 @@ def get_course(db: Session, course_id: int) -> Optional[Course]:
 
 
 def list_courses(db: Session) -> List[Course]:
-    query = select(Course)
+    query = select(Course).options(
+        selectinload(Course.professors),  # Adjust this line based on your actual relationship # type: ignore
+        selectinload(Course.major), # type: ignore
+        selectinload(Course.classroom) # type: ignore
+    )
     return db.exec(query).all()  # type: ignore
 
 

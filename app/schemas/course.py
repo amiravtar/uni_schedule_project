@@ -14,7 +14,7 @@ class CourseBase(BaseModel):
     units: int = Field(gt=0)  # Units must be greater than 0
     duration: str = Field(pattern=r"^\d{2}:\d{2}$")  # Validates "hh:mm" format
     semester: int = Field(gt=0, lt=11)  # Semester must be greater than 0
-    calculated_hours: Decimal = Field(max_digits=2, decimal_places=1)
+    calculated_hours: Decimal = Field(max_digits=3, decimal_places=2)
     major_id: int
     classroom_id: int
 
@@ -38,7 +38,7 @@ class CourseUpdate(BaseModel):
     units: Optional[int] = Field(gt=0)
     duration: Optional[str] = Field(pattern=r"^\d{2}:\d{2}$")
     semester: Optional[int] = Field(gt=0, lt=11)
-    calculated_hours: Optional[Decimal] = Field(max_digits=2, decimal_places=1)
+    calculated_hours: Optional[Decimal] = Field(max_digits=3, decimal_places=2)
     major_id: Optional[int] = None
     classroom_id: Optional[int] = None
     professor_ids: Optional[List[int]] = None

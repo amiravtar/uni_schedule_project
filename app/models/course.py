@@ -23,7 +23,7 @@ class Course(SQLModel, table=True):
     units: int = Field(gt=0)
     duration: str  # Stored as "hh:mm" format
     semester: int = Field(gt=0, lt=11)
-    calculated_hours: Decimal = Field(max_digits=2, decimal_places=1)
+    calculated_hours: Decimal = Field(max_digits=3, decimal_places=2)
 
     major_id: int = Field(foreign_key="major.id")
     classroom_id: int = Field(foreign_key="classroom.id")
