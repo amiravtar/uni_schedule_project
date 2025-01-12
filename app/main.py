@@ -8,7 +8,7 @@ from app.routes.professors import router as professor_router
 from app.routes.auth import router as auth_router
 from app.routes.classroom import router as classroom_router
 from app.routes.course import router as course_router
-
+from fastapi.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, lifespan=lifespan_context)  # type: ignore
@@ -26,6 +26,14 @@ async def lifespan_context(app: FastAPI):
 
 
 app = create_app()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
