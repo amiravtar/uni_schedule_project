@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from app.schemas.course import CourseRead
 from app.schemas.professors import ProfessorRead, TimeSlot, Weekday
-from app.schemas.solver import Courses as SolverSourses
+from app.schemas.solver import Cources as SolverSourses
 from app.schemas.solver import CourceTimeSlots
 from schema.json import ModelResualt, Professor, ResualtCourse, ResualtDict, RootSchema
 from solver.solver import TimeProf, minutes_to_time
