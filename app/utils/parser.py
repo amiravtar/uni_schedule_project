@@ -4,7 +4,14 @@ from datetime import datetime, timedelta
 
 from app.schemas.course import CourseRead
 from app.schemas.professors import ProfessorRead, TimeSlot, Weekday
-from app.schemas.solver import CourceTimeSlots, minutes_to_time
+from app.schemas.solver import (
+    CourceTimeSlots,
+    SolverCourseSelectedDate,
+    SolverResualt,
+    SolverSolution,
+    SolverSolutionCourse,
+    minutes_to_time,
+)
 from app.schemas.solver import Courses as SolverSourses
 from schema.json import ModelResualt, Professor, ResualtCourse, ResualtDict, RootSchema
 from solver.solver import TimeProf
@@ -18,6 +25,7 @@ def parse_time_range(time_slot: TimeSlot) -> tuple[Weekday, datetime, datetime]:
     start_time = datetime.strptime(start_str, "%H:%M")
     end_time = datetime.strptime(end_str, "%H:%M")
     return day, start_time, end_time
+
 
 def generate_time_slots(
     day: Weekday,
@@ -39,13 +47,11 @@ def generate_time_slots(
             original_start=current_time.strftime("%H%M"),
             prof=professor.id,
             prefered=is_preferred,
-            professor_max_time=professor.max_hour,
-            professor_min_time=professor.min_hour,
         )
         slots.add(slot)
         current_time = next_time
     current_time = end_time
-    while current_time- duration >=start_time:
+    while current_time - duration >= start_time:
         next_time = current_time - duration
         slot = CourceTimeSlots(
             day=day.value,
@@ -54,12 +60,10 @@ def generate_time_slots(
             original_start=next_time.strftime("%H%M"),
             prof=professor.id,
             prefered=is_preferred,
-            professor_max_time=professor.max_hour,
-            professor_min_time=professor.min_hour,
         )
         slots.add(slot)
         current_time = next_time
-    time_slots=list(slots)
+    time_slots = list(slots)
     return time_slots
 
 
@@ -80,27 +84,32 @@ def get_professor_slots(prof: ProfessorRead, duration: str) -> list[CourceTimeSl
     return list(all_slots)
 
 
-def convert_model_resualt_to_json(
-    sols: list[list[tuple[str, TimeProf, int]]], parsed_json_data: RootSchema
-) -> ModelResualt:
-    resualt = ModelResualt(resualts=list())
-    for i in sols:
-        sol_coruses = list()
-        for id, timeslot, score in i:
-            for course in parsed_json_data.data.courses:
-                if not course.id == id:
-                    continue
-                resualt_course = ResualtCourse(
-                    id=id,
-                    day=int(timeslot.day),
-                    start=str(minutes_to_time(timeslot.start)),
-                    end=str(minutes_to_time(timeslot.end)),
-                    professor_id=str(timeslot.prof),
-                    is_prefered_time=bool(timeslot.prefered),
-                )
-                sol_coruses.append(resualt_course)
-        resualt.resualts.append(ResualtDict(score=score, courses=sol_coruses))
-    return resualt
+def parse_solver_output(
+    sols: list[list[tuple[int, CourceTimeSlots, int]]],
+    input_courses: list[SolverSourses],
+    professors: dict[int, ProfessorRead],
+) -> SolverResualt:
+    solver_resualt: SolverResualt = SolverResualt(Solutions=list())
+    for sol in sols:
+        solver_solution: SolverSolution = SolverSolution(courses=list())
+        for course_id, timeslot, score in sol:
+            course: SolverSourses = next(
+                (x for x in input_courses if x.id == course_id)
+            )
+            solver_sol_course = SolverSolutionCourse(
+                **course.model_dump(exclude={"time_slots"}),
+                selected_slot=SolverCourseSelectedDate(
+                    day=timeslot.day,
+                    start_time=timeslot.start_time,
+                    end_time=timeslot.end_time,
+                    professor_id=timeslot.prof,
+                    professor_name=professors[timeslot.prof].full_name,
+                    prefered=timeslot.prefered,
+                ),
+            )
+            solver_solution.courses.append(solver_sol_course)
+        solver_resualt.Solutions.append(solver_solution)
+    return solver_resualt
 
 
 def convert_course_read_list_to_solver_course_list(
@@ -121,6 +130,8 @@ def convert_course_read_list_to_solver_course_list(
             max_classes=course.classroom.available_classes,  # type: ignore
             group_id=course.major_id * 10 + course.semester,
             time_slots=[],
+            classroom_name=course.classroom.name,  # type: ignore
+            major_name=course.major.name,  # type: ignore
         )
         for professor in course.professors:
             solver_course.time_slots.extend(

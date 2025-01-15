@@ -7,6 +7,7 @@ from operator import attrgetter
 
 from ortools.sat.python import cp_model
 
+from app.schemas.professors import ProfessorRead
 from app.schemas.solver import CourceTimeSlots as SolverCourseTimeSlot
 from app.schemas.solver import Courses as SolverCourse
 from app.schemas.solver import SolverSettings, convert_time_to_min, minutes_to_time
@@ -118,7 +119,12 @@ def parse_courses(courses: list[tuple[str, list[str], int]]) -> dict[str, Course
 
 
 class ModelSolver:
-    def __init__(self, data: list[SolverCourse], settings: SolverSettings) -> None:
+    def __init__(
+        self,
+        data: list[SolverCourse],
+        settings: SolverSettings,
+        professors: dict[int, ProfessorRead],
+    ) -> None:
         ids = set()
         for i in data:
             if i.id not in ids:
@@ -127,7 +133,7 @@ class ModelSolver:
                 raise ValueError("There is a duplicate id among the courses")
         self.data: list[SolverCourse] = data
         self.num_solution = settings.number_of_solutions
-        self.soloutins = list()
+        self.soloutins: list[list[tuple[int, SolverCourseTimeSlot, int]]] = list()
 
     def solve(self):  # noqa: C901
         self.soloutins.clear()
@@ -144,7 +150,7 @@ class ModelSolver:
         # Creat all Variables
         for course in self.data:
             course_times = list()
-            if len(course.time_slots)==0:
+            if len(course.time_slots) == 0:
                 raise ValueError(f"Course {course} dose not have any timeslot")
             for time in course.time_slots:
                 bool_variables[(course.id, time)] = model.new_bool_var(
@@ -180,7 +186,6 @@ class ModelSolver:
             demands = [1] * len(group_intervals)
             model.add_cumulative(group_intervals, demands, 1)
 
-
         # Creat professor constraints (a professor cant teach > 1 class at the same time)
         professor_data: dict[int, list[tuple[SolverCourseTimeSlot, int]]] = {}
         for prof, items in groupby(
@@ -202,8 +207,8 @@ class ModelSolver:
             demands = [1] * len(professor_intervals)
             model.add_cumulative(professor_intervals, demands, 1)
             solver = cp_model.CpSolver()
-            stat=solver.solve(model)
-            if stat!=4:
+            stat = solver.solve(model)
+            if stat != 4:
                 logger.info("badd")
         # maxumize for prefered time slots
         model.maximize(sum(bool_variables_prefered))
@@ -225,7 +230,8 @@ class ModelSolver:
             # if stat in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
             #     print("optimal,fes")
             sol_vars = list()
-            last_sol = list()
+            # course id, selected time slot, score of this solution
+            last_sol: list[tuple[int, SolverCourseTimeSlot, int]] = list()
             # append the solution to the list of solutions
             for (id, solver_timeslot), model_bool_variable in bool_variables.items():  # noqa: A001
                 if solver.value(model_bool_variable):
