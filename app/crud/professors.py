@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import HTTPException
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 from app.crud.major import get_major
@@ -24,7 +25,7 @@ def get_professor(session: Session, professor_id: int) -> Optional[Professor]:
 
 
 def list_professors(session: Session) -> List[Professor]:
-    query = select(Professor)
+    query = select(Professor).options(selectinload(Professor.major))  # type: ignore
     return session.exec(query).all()  # type: ignore
 
 

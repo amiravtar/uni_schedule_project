@@ -4,6 +4,8 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, conint, field_validator
 
+from app.schemas.major import MajorRead
+
 
 class Weekday(int, Enum):
     FRIDAY = 6
@@ -41,6 +43,7 @@ class ProfessorCreate(ProfessorBase):
 
 class ProfessorRead(ProfessorBase):
     id: int
+    major: MajorRead
 
     class Config:
         orm_mode = True
