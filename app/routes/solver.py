@@ -7,7 +7,7 @@ from app.core.dependencies import get_current_user
 from app.crud.course import list_courses
 from app.db.session import get_session
 from app.schemas.course import CourseRead
-from app.schemas.solver import Cources as SolverCourse
+from app.schemas.solver import Courses as SolverCourse
 from app.schemas.solver import SolverSettings
 from app.solver.solver import ModelSolver
 from app.utils.parser import convert_course_read_list_to_solver_course_list
@@ -29,5 +29,5 @@ def solve(settings: SolverSettings, session: SessionDep):
         courses
     )
     model = ModelSolver(data=model_data, settings=settings)
-    model.solve()
-    return {"data": ""}
+    data=model.solve()
+    return {"data": data}

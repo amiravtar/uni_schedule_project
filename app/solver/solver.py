@@ -1,3 +1,4 @@
+# ruff: noqa: C408
 import logging
 from collections import namedtuple
 from dataclasses import dataclass
@@ -5,6 +6,10 @@ from itertools import groupby
 from operator import attrgetter
 
 from ortools.sat.python import cp_model
+
+from app.schemas.solver import CourceTimeSlots as SolverCourseTimeSlot
+from app.schemas.solver import Courses as SolverCourse
+from app.schemas.solver import SolverSettings, convert_time_to_min, minutes_to_time
 
 # from data_min import COURSES
 # from data_min2 import COURSES
@@ -25,20 +30,6 @@ class Course:
     group: int
     times: list[TimeProf]
     unit: int
-
-
-def convert_time_to_min(time: int):  # hhmm
-    hours = time // 100
-    minutes = time % 100
-    total_minutes = hours * 60 + minutes
-    return total_minutes
-
-
-def minutes_to_time(total_minutes: int):
-    # total_minutes = total_minutes % 1440  # Wrap around at 1440 minutes (24 hours)
-    hours = total_minutes // 60
-    minutes = total_minutes % 60
-    return str(hours * 100 + minutes).zfill(4)
 
 
 def parse_courses(courses: list[tuple[str, list[str], int]]) -> dict[str, Course]:
@@ -96,7 +87,7 @@ def parse_courses(courses: list[tuple[str, list[str], int]]) -> dict[str, Course
 #     def on_solution_callback(self):
 #         self.count += 1
 #         self.last_sol.clear()
-#         sol = []
+#         sol = list()
 #         for k, v in self.bool_variables.items():
 #             if self.value(v):
 #                 if self.save_last:
@@ -127,78 +118,93 @@ def parse_courses(courses: list[tuple[str, list[str], int]]) -> dict[str, Course
 
 
 class ModelSolver:
-    def __init__(self, data: dict[str, Course], num_solution: int = 50) -> None:
-        self.data: dict[str, Course] = data
-        self.num_solution = num_solution
-        self.soloutins = []
+    def __init__(self, data: list[SolverCourse], settings: SolverSettings) -> None:
+        ids = set()
+        for i in data:
+            if i.id not in ids:
+                ids.add(i.id)
+            else:
+                raise ValueError("There is a duplicate id among the courses")
+        self.data: list[SolverCourse] = data
+        self.num_solution = settings.number_of_solutions
+        self.soloutins = list()
 
-    def solve(self) -> list[list[tuple[str, TimeProf, int]]]:
+    def solve(self):  # noqa: C901
         self.soloutins.clear()
-        # struct
-        # prof:3 day:1 start:4
         model = cp_model.CpModel()
         # Model the problem
         # the actual time intervals for each course time slots, it is then linked to bool_variables
-        interval_variables: dict[tuple[str, TimeProf], cp_model.IntervalVar] = {}
+        interval_variables: dict[
+            tuple[int, SolverCourseTimeSlot], cp_model.IntervalVar
+        ] = {}
         # basicly time slots that says what time slot is selected for the course
-        bool_variables: dict[tuple[str, TimeProf], cp_model.IntVar] = {}
+        bool_variables: dict[tuple[int, SolverCourseTimeSlot], cp_model.IntVar] = {}
         # list of time slots that are perefered
-        bool_variables_prefered: list[cp_model.IntVar] = []
+        bool_variables_prefered: list[cp_model.IntVar] = list()
         # Creat all Variables
-        for k, v in self.data.items():
+        for course in self.data:
             course_times = list()
-            for time in v.times:
-                bool_variables[(k, time)] = model.new_bool_var(
-                    f"bool_course_{k}_day_{time.day}_start_{minutes_to_time(time.start)}_end_{minutes_to_time(time.end)}_prof_{time.prof}_prefered_{time.prefered}"
+            if len(course.time_slots)==0:
+                raise ValueError(f"Course {course} dose not have any timeslot")
+            for time in course.time_slots:
+                bool_variables[(course.id, time)] = model.new_bool_var(
+                    name=f"bool_course_{course.id}_day_{time.day}_start_{time.start_time}_end_{time.end_time}_prof_{time.prof}_prefered_{time.prefered}"
                 )
                 if time.prefered:
-                    bool_variables_prefered.append(bool_variables[(k, time)])
-                interval_variables[(k, time)] = model.NewOptionalIntervalVar(
-                    start=int(str(time.day + 1) + str(time.start)),
-                    size=time.end - time.start,
-                    end=int(str(time.day + 1) + str(time.end)),
-                    is_present=bool_variables[(k, time)],
-                    name=f"bool_course_{k}_day_{time.day}_start_{minutes_to_time(time.start)}_end_{minutes_to_time(time.end)}_prof_{time.prof}_prefered_{time.prefered}",
+                    bool_variables_prefered.append(bool_variables[(course.id, time)])
+                model_start_time = convert_time_to_min(int(time.start_time))
+                model_end_time = convert_time_to_min(int(time.end_time))
+                interval_variables[(course.id, time)] = model.NewOptionalIntervalVar(
+                    start=int(str(time.day + 1) + str(model_start_time).zfill(4)),
+                    size=model_end_time - model_start_time,
+                    end=int(str(time.day + 1) + str(model_end_time).zfill(4)),
+                    is_present=bool_variables[(course.id, time)],
+                    name=f"bool_course_{course.id}_day_{time.day}_start_{str(time.start_time)}_end_{str(time.end_time)}_prof_{time.prof}_prefered_{time.prefered}",
                 )
-                course_times.append(bool_variables[(k, time)])
+                course_times.append(bool_variables[(course.id, time)])
             model.add_exactly_one(course_times)
 
-        # Creat Group constraints (only 1 class blonging to a group (major + semister) can happen at a time)
-        group_data: dict[int, list[Course]] = {
+        # Creat Group constraints (only 1 class blonging to a group (group_id calculated by semester and major id) can happen at a time)
+        group_data: dict[int, list[SolverCourse]] = {
             group: list(items)
             for group, items in groupby(
-                sorted(list(self.data.values()), key=attrgetter("group")),
-                key=attrgetter("group"),
+                sorted(self.data, key=attrgetter("id")),
+                key=attrgetter("group_id"),
             )
         }
-        for k, v in group_data.items():
-            group_intervals = []
-            for course in v:
-                for time in course.times:
-                    group_intervals.append(interval_variables[(course.id, time)])
+        for group_id in group_data.values():
+            group_intervals = list()
+            for course in group_id:
+                for time in course.time_slots:
+                    group_intervals.append(interval_variables[(course.id, time)])  # noqa: PERF401
             demands = [1] * len(group_intervals)
             model.add_cumulative(group_intervals, demands, 1)
 
+
         # Creat professor constraints (a professor cant teach > 1 class at the same time)
-        professor_data: dict[str, list[tuple[TimeProf, str]]] = {}
+        professor_data: dict[int, list[tuple[SolverCourseTimeSlot, int]]] = {}
         for prof, items in groupby(
             sorted(
                 [
-                    (time, course[0])
-                    for course in self.data.items()
-                    for time in course[1].times
+                    (time, course.id)
+                    for course in self.data
+                    for time in course.time_slots
                 ],
                 key=lambda x: x[0].prof,
             ),
             key=lambda x: x[0].prof,
         ):
             professor_data[prof] = list(items)
-        for prof_id, val in professor_data.items():
-            professor_intervals = []
+        for prof_id, val in professor_data.items():  # noqa: PERF102
+            professor_intervals = list()
             for time, coruse_id in val:
                 professor_intervals.append(interval_variables[(coruse_id, time)])
             demands = [1] * len(professor_intervals)
             model.add_cumulative(professor_intervals, demands, 1)
+            solver = cp_model.CpSolver()
+            stat=solver.solve(model)
+            if stat!=4:
+                logger.info("badd")
         # maxumize for prefered time slots
         model.maximize(sum(bool_variables_prefered))
         solver = cp_model.CpSolver()
@@ -221,11 +227,11 @@ class ModelSolver:
             sol_vars = list()
             last_sol = list()
             # append the solution to the list of solutions
-            for (id, timeprof), variable in bool_variables.items():
-                if solver.value(variable):
-                    sol_vars.append(variable)
+            for (id, solver_timeslot), model_bool_variable in bool_variables.items():  # noqa: A001
+                if solver.value(model_bool_variable):
+                    sol_vars.append(model_bool_variable)
                     # TODO :Add score to it, 50 is just a placeholder
-                    last_sol.append((id, timeprof, 50))
+                    last_sol.append((id, solver_timeslot, 50))
             # for k, v in sol_print.last_sol:
             #     print(
             #         k[0],
@@ -246,29 +252,30 @@ class ModelSolver:
 
 
 if __name__ == "__main__":
-    from mock_data import MockData
+    pass
+    # from mock_data import MockData
 
-    mock = MockData(
-        num_courses=700,
-        proffesor_cout=500,
-        group_max=70,
-        timeslot_per_course_min=5,
-        timeslot_per_course_max=12,
-    )
-    input_data = mock.generate_data()
-    data = parse_courses(input_data)
+    # mock = MockData(
+    #     num_courses=700,
+    #     proffesor_cout=500,
+    #     group_max=70,
+    #     timeslot_per_course_min=5,
+    #     timeslot_per_course_max=12,
+    # )
+    # input_data = mock.generate_data()
+    # data = parse_courses(input_data)
 
-    Mo = ModelSolver(data=data, num_solution=20)
-    sols = Mo.solve()
-    for i in sols:
-        for j in i:
-            print(
-                j[0],
-                j[1].group,
-                j[1].day,
-                minutes_to_time(j[1].start),
-                minutes_to_time(j[1].end),
-                j[1].prof,
-                j[1].prefered,
-            )
-        print("\n\n\n")
+    # Mo = ModelSolver(data=data, num_solution=20)
+    # sols = Mo.solve()
+    # for i in sols:
+    #     for j in i:
+    #         print(
+    #             j[0],
+    #             j[1].group,
+    #             j[1].day,
+    #             minutes_to_time(j[1].start),
+    #             minutes_to_time(j[1].end),
+    #             j[1].prof,
+    #             j[1].prefered,
+    #         )
+    #     print("\n\n\n")

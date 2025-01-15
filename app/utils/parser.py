@@ -1,11 +1,13 @@
+# ruff: noqa: C408
+
 from datetime import datetime, timedelta
 
 from app.schemas.course import CourseRead
 from app.schemas.professors import ProfessorRead, TimeSlot, Weekday
-from app.schemas.solver import Cources as SolverSourses
-from app.schemas.solver import CourceTimeSlots
+from app.schemas.solver import CourceTimeSlots, minutes_to_time
+from app.schemas.solver import Courses as SolverSourses
 from schema.json import ModelResualt, Professor, ResualtCourse, ResualtDict, RootSchema
-from solver.solver import TimeProf, minutes_to_time
+from solver.solver import TimeProf
 
 
 def parse_time_range(time_slot: TimeSlot) -> tuple[Weekday, datetime, datetime]:
@@ -17,41 +19,65 @@ def parse_time_range(time_slot: TimeSlot) -> tuple[Weekday, datetime, datetime]:
     end_time = datetime.strptime(end_str, "%H:%M")
     return day, start_time, end_time
 
-
 def generate_time_slots(
     day: Weekday,
     start_time: datetime,
     end_time: datetime,
     duration: timedelta,
     is_preferred: bool,
-    proff_id: int,
-) -> list[str]:
+    professor: ProfessorRead,
+) -> list[CourceTimeSlots]:
     """Generates time slots of given duration within the specified time range."""
-    slots = []
+    slots: set[CourceTimeSlots] = set()
     current_time = start_time
     while current_time + duration <= end_time:
         next_time = current_time + duration
-        slot = f"{day.value},{current_time.strftime('%H%M')},{next_time.strftime('%H%M')},{proff_id},{int(is_preferred)}"
-        slots.append(slot)
+        slot = CourceTimeSlots(
+            day=day.value,
+            start_time=current_time.strftime("%H%M"),
+            end_time=next_time.strftime("%H%M"),
+            original_start=current_time.strftime("%H%M"),
+            prof=professor.id,
+            prefered=is_preferred,
+            professor_max_time=professor.max_hour,
+            professor_min_time=professor.min_hour,
+        )
+        slots.add(slot)
         current_time = next_time
-    return slots
+    current_time = end_time
+    while current_time- duration >=start_time:
+        next_time = current_time - duration
+        slot = CourceTimeSlots(
+            day=day.value,
+            start_time=next_time.strftime("%H%M"),
+            end_time=current_time.strftime("%H%M"),
+            original_start=next_time.strftime("%H%M"),
+            prof=professor.id,
+            prefered=is_preferred,
+            professor_max_time=professor.max_hour,
+            professor_min_time=professor.min_hour,
+        )
+        slots.add(slot)
+        current_time = next_time
+    time_slots=list(slots)
+    return time_slots
 
 
 def get_professor_slots(prof: ProfessorRead, duration: str) -> list[CourceTimeSlots]:
     """Returns the sum of all of its ranges in slots of specified duration."""
     duration_hours, duration_minutes = map(int, duration.split(":"))
     duration_delta = timedelta(hours=duration_hours, minutes=duration_minutes)
-    all_slots = []
+    all_slots = set()
 
     for time_slot in prof.time_slots:
         day, start_time, end_time = parse_time_range(time_slot)
         is_preferred = day in prof.preferred_days
         slots = generate_time_slots(
-            day, start_time, end_time, duration_delta, is_preferred, proff_id=prof.id
+            day, start_time, end_time, duration_delta, is_preferred, professor=prof
         )
-        all_slots.extend(slots)
+        all_slots.update(slots)
 
-    return all_slots
+    return list(all_slots)
 
 
 def convert_model_resualt_to_json(
@@ -66,10 +92,6 @@ def convert_model_resualt_to_json(
                     continue
                 resualt_course = ResualtCourse(
                     id=id,
-                    # name=course.name,
-                    # units=course.units,
-                    # duration=course.duration,
-                    # semister=int(timeslot.group),
                     day=int(timeslot.day),
                     start=str(minutes_to_time(timeslot.start)),
                     end=str(minutes_to_time(timeslot.end)),
