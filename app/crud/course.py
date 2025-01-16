@@ -46,10 +46,16 @@ def get_course(db: Session, course_id: int) -> Optional[Course]:
 
 
 def list_courses(db: Session) -> List[Course]:
-    query = select(Course).options(
-        selectinload(Course.professors),  # Adjust this line based on your actual relationship # type: ignore
-        selectinload(Course.major), # type: ignore
-        selectinload(Course.classroom) # type: ignore
+    query = (
+        select(Course)
+        .options(
+            selectinload(
+                Course.professors  # type: ignore
+            ),  # Adjust this line based on your actual relationship
+            selectinload(Course.major),  # type: ignore
+            selectinload(Course.classroom),  # type: ignore
+        )
+        .order_by(Course.id.desc())  # type: ignore
     )
     return db.exec(query).all()  # type: ignore
 

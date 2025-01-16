@@ -25,7 +25,7 @@ def get_professor(session: Session, professor_id: int) -> Optional[Professor]:
 
 
 def list_professors(session: Session) -> List[Professor]:
-    query = select(Professor).options(selectinload(Professor.major))  # type: ignore
+    query = select(Professor).options(selectinload(Professor.major)).order_by(Professor.id.desc())  # type: ignore
     return session.exec(query).all()  # type: ignore
 
 

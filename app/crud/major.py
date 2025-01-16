@@ -17,7 +17,7 @@ def get_major(session: Session, major_id: int) -> Optional[Major]:
 
 
 def list_majors(session: Session) -> List[Major]:
-    query = select(Major)
+    query = select(Major).order_by(Major.id.desc()) # type: ignore
     return session.exec(query).all() # type: ignore
 
 

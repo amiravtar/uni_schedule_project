@@ -20,7 +20,7 @@ def get_classroom(session: Session, classroom_id: int) -> Optional[Classroom]:
 
 
 def list_classrooms(session: Session) -> List[Classroom]:
-    query = select(Classroom)
+    query = select(Classroom).order_by(Classroom.id.desc())  # type: ignore
     return session.exec(query).all()  # type: ignore
 
 
