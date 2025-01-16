@@ -1,8 +1,8 @@
 from datetime import time
 from decimal import Decimal
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.classroom import ClassroomRead
 from app.schemas.major import MajorRead
@@ -28,6 +28,18 @@ class CourseRead(CourseBase):
     professors: List[ProfessorRead] = []
     major: Optional[MajorRead]
     classroom: Optional[ClassroomRead]
+
+    class Config:
+        orm_mode = True
+
+
+class CourseReadLight(CourseBase):
+    id: int
+    professors: list[int]
+
+    @field_validator("professors", mode="before")
+    def normalize_time(cls, value) -> list[int]:
+        return [x.id for x in value]
 
     class Config:
         orm_mode = True
