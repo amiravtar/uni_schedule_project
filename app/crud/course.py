@@ -55,7 +55,7 @@ def list_courses(db: Session) -> List[Course]:
             selectinload(Course.major),  # type: ignore
             selectinload(Course.classroom),  # type: ignore
         )
-        .order_by(Course.id.desc()).limit(20) # type: ignore
+        .order_by(Course.id.desc())  # type: ignore
     )
     return db.exec(query).all()  # type: ignore
 

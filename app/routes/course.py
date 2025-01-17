@@ -14,7 +14,7 @@ from app.crud.course import (
     update_course,
 )
 from app.db.session import get_session
-from app.schemas.course import CourseCreate, CourseRead, CourseReadLight, CourseUpdate
+from app.schemas.course import CourseCreate, CourseRead, CourseUpdate
 from app.schemas.errors import Error404Response
 
 # Define the annotated dependency
@@ -42,7 +42,7 @@ def get_course_endpoint(course_id: int, session: SessionDep):
     return course
 
 
-@router.get("/", response_model=List[CourseReadLight])
+@router.get("/", response_model=List[CourseRead])
 def list_courses_endpoint(session: SessionDep):
     return list_courses(session)
 
