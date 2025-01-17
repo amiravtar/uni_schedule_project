@@ -23,6 +23,7 @@ class TimeSlot(BaseModel):
     end_time: str
 
     @field_validator("start_time", "end_time", mode="before")
+    @classmethod
     def normalize_time(cls, value: Any) -> str:
         parsed_time = time.fromisoformat(value)
         return f"{parsed_time.hour:02}:{parsed_time.minute:02}"

@@ -6,10 +6,24 @@ from typing_extensions import Annotated
 from app.core.dependencies import get_current_user
 from app.crud.course import list_courses
 from app.crud.professors import list_professors
+from app.crud.solver import (
+    create_solver_resualt,
+    delete_solver_resualt,
+    get_solver_resualt,
+    list_solver_resualts,
+)
 from app.db.session import get_session
 from app.schemas.course import CourseRead
+from app.schemas.errors import Error404Response
 from app.schemas.professors import ProfessorRead
-from app.schemas.solver import CourceTimeSlots, SolverResualt, SolverSettings
+from app.schemas.solver import (
+    CourceTimeSlots,
+    SolverHistoryResualtCreate,
+    SolverHistoryResualtRead,
+    SolverHistoryResualtReadLight,
+    SolverResualt,
+    SolverSettings,
+)
 from app.schemas.solver import Courses as SolverCourse
 from app.solver.solver import ModelSolver
 from app.utils.parser import (
@@ -47,7 +61,9 @@ def solve(settings: SolverSettings, session: SessionDep):
     model = ModelSolver(data=model_data, settings=settings, professors=dict_professors)
     try:
         data: list[list[tuple[int, CourceTimeSlots, int]]] = model.solve()
-        output_data = parse_solver_output(sols=data, input_courses=model_data,professors=dict_professors)
+        output_data = parse_solver_output(
+            sols=data, input_courses=model_data, professors=dict_professors
+        )
         return output_data
     except ValueError as ex:
         return JSONResponse(
@@ -58,3 +74,48 @@ def solve(settings: SolverSettings, session: SessionDep):
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=str(ex)
         )
+
+
+@router.post("/resualt/", response_model=SolverHistoryResualtReadLight)
+def create_solver_resualt_endpoint(
+    solver_resualt: SolverHistoryResualtCreate, session: SessionDep
+):
+    new_solver_resualt = create_solver_resualt(session, solver_resualt)
+    return new_solver_resualt
+
+
+@router.get(
+    "/resualt/{solver_resualt_id}",
+    response_model=SolverHistoryResualtRead,
+    responses={
+        404: {"description": "Solver result not found", "model": Error404Response},
+    },
+)
+def get_solver_resualt_endpoint(solver_resualt_id: int, session: SessionDep):
+    solver_resualt = get_solver_resualt(session, solver_resualt_id)
+    if not solver_resualt:
+        return JSONResponse(
+            status_code=404, content={"message": "Solver result not found"}
+        )
+    return solver_resualt
+
+
+@router.get("/resualt/", response_model=list[SolverHistoryResualtReadLight])
+def list_solver_resualts_endpoint(session: SessionDep):
+    return list_solver_resualts(session)
+
+
+@router.delete(
+    "/resualt/{solver_resualt_id}",
+    response_model=dict,
+    responses={
+        404: {"description": "Solver result not found", "model": Error404Response},
+    },
+)
+def delete_solver_resualt_endpoint(solver_resualt_id: int, session: SessionDep):
+    success = delete_solver_resualt(session, solver_resualt_id)
+    if not success:
+        return JSONResponse(
+            status_code=404, content={"message": "Solver result not found"}
+        )
+    return {"message": "Solver result deleted successfully"}

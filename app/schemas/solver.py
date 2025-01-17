@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, ClassVar
-
+from pytz import timezone
 from pydantic import BaseModel, field_validator
 
 
@@ -89,6 +89,7 @@ class SolverCourseSelectedDate(BaseModel):
     prefered: bool
 
     @field_validator("start_time", "end_time", mode="before")
+    @classmethod
     def normalize_time(cls, value: Any) -> str:
         return f"{value[:2]}:{value[2:]}"
 
@@ -111,16 +112,33 @@ class SolverResualt(BaseModel):
 
 class SolverHistoryResualtBase(BaseModel):
     name: str
+
+
+class SolverHistoryResualtCreate(SolverHistoryResualtBase):
     resualt: dict
 
 
-class SolverResualtCreate(SolverHistoryResualtBase):
-    pass  # All required fields for creation are inherited from the base
+class SolverHistoryResualtRead(SolverHistoryResualtBase):
+    id: int
+    created_at: datetime
+    resualt: dict
+
+    class Config:
+        orm_mode = True  # Allows compatibility with ORM models
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def convert_to_local_tz(cls, value: datetime) -> datetime:
+        return value.replace(tzinfo=timezone("UTC")).astimezone(timezone("Asia/Tehran"))
 
 
-class SolverResualtRead(SolverHistoryResualtBase):
+class SolverHistoryResualtReadLight(SolverHistoryResualtBase):
     id: int
     created_at: datetime
 
     class Config:
         orm_mode = True  # Allows compatibility with ORM models
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def convert_to_local_tz(cls, value: datetime) -> datetime:
+        return value.replace(tzinfo=timezone("UTC")).astimezone(timezone("Asia/Tehran"))
