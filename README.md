@@ -30,3 +30,4 @@ export APP_PORT=8001
 #‌TODO
 - [  ] Add some logs
 - [  ] Add some comments for codes and classses
+- [  ] Pars the multirange professor timeslot into a single one if they are connected

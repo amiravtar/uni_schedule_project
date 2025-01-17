@@ -132,8 +132,9 @@ class ModelSolver:
             else:
                 raise ValueError("There is a duplicate id among the courses")
         self.data: list[SolverCourse] = data
-        self.num_solution = settings.number_of_solutions
+        self.settings: SolverSettings = settings
         self.soloutins: list[list[tuple[int, SolverCourseTimeSlot, int]]] = list()
+        self.professors: dict[int, ProfessorRead] = professors
 
     def solve(self):  # noqa: C901
         self.soloutins.clear()
@@ -187,7 +188,8 @@ class ModelSolver:
             model.add_cumulative(group_intervals, demands, 1)
 
         # Creat professor constraints (a professor cant teach > 1 class at the same time)
-        professor_data: dict[int, list[tuple[SolverCourseTimeSlot, int]]] = {}
+        # tuple[solvercoursetimeslot,course_id]
+        professors_data: dict[int, list[tuple[SolverCourseTimeSlot, int]]] = {}
         for prof, items in groupby(
             sorted(
                 [
@@ -199,13 +201,40 @@ class ModelSolver:
             ),
             key=lambda x: x[0].prof,
         ):
-            professor_data[prof] = list(items)
-        for prof_id, val in professor_data.items():  # noqa: PERF102
+            professors_data[prof] = list(items)
+        for prof_id, val in professors_data.items():  # noqa: PERF102
             professor_intervals = list()
             for time, coruse_id in val:
                 professor_intervals.append(interval_variables[(coruse_id, time)])
             demands = [1] * len(professor_intervals)
             model.add_cumulative(professor_intervals, demands, 1)
+
+        # Min and max course hours for professor constraints
+        if self.settings.professor_min_max_time_limitation:
+            courses_dict = {course.id: course for course in self.data}
+            for prof_id, val in professors_data.items():
+                professor_data: ProfessorRead = self.professors[prof_id]
+                prof_min_hour = professor_data.min_hour
+                prof_max_hour = professor_data.max_hour
+                if prof_max_hour == 0 and prof_min_hour == 0:
+                    continue
+
+                bool_vars = []
+                hours = []
+                for slot, course_id in val:
+                    bool_vars.append(bool_variables[(course_id, slot)])
+                    hours.append(courses_dict[course_id].calculated_hours)
+                if prof_max_hour > 0:
+                    model.add(
+                        sum(bool_var * hour for bool_var, hour in zip(bool_vars, hours))
+                        <= prof_max_hour * 100
+                    )
+                if prof_min_hour > 0:
+                    model.add(
+                        sum(bool_var * hour for bool_var, hour in zip(bool_vars, hours))
+                        >= prof_min_hour * 100
+                    )
+
         # maxumize for prefered time slots
         model.maximize(sum(bool_variables_prefered))
         solver = cp_model.CpSolver()
@@ -213,7 +242,7 @@ class ModelSolver:
         # sol_print = printer(bool_variables, interval_variables, model)
         # sol_print = printer(bool_variables, interval_variables, model, save_last=False)
 
-        for i in range(self.num_solution):
+        for i in range(self.settings.number_of_solutions):
             stat = solver.solve(model)
             if stat == cp_model.INFEASIBLE:
                 logger.info("INFEASIBLE")
