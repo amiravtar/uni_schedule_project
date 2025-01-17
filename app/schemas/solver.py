@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, field_validator
@@ -71,6 +72,7 @@ class SolverSettings(BaseModel):
     number_of_solutions: int
     classroom_limitation: bool = True
     professor_min_max_time_limitation: bool = True
+    solver_resualt_name: str
 
 
 class SolverInputData(BaseModel):
@@ -93,7 +95,7 @@ class SolverCourseSelectedDate(BaseModel):
 
 class SolverSolutionCourse(Courses):
     selected_slot: SolverCourseSelectedDate
-    time_slots: ClassVar[list] # type: ignore
+    time_slots: ClassVar[list]  # type: ignore
 
     class Config:
         fields = {"time_slots": {"exclude": True}}
@@ -105,3 +107,20 @@ class SolverSolution(BaseModel):
 
 class SolverResualt(BaseModel):
     Solutions: list[SolverSolution]
+
+
+class SolverHistoryResualtBase(BaseModel):
+    name: str
+    resualt: dict
+
+
+class SolverResualtCreate(SolverHistoryResualtBase):
+    pass  # All required fields for creation are inherited from the base
+
+
+class SolverResualtRead(SolverHistoryResualtBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True  # Allows compatibility with ORM models
