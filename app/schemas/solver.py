@@ -1,7 +1,6 @@
-from decimal import Decimal
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, field_validator
 
 
 def convert_time_to_min(time: int):  # hhmm

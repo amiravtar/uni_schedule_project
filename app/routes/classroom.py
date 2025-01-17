@@ -14,7 +14,6 @@ from app.crud.classroom import (
     update_classroom,
 )
 from app.db.session import get_session
-from app.models.classroom import Classroom
 from app.schemas.classroom import ClassroomCreate, ClassroomRead, ClassroomUpdate
 from app.schemas.errors import Error404Response
 

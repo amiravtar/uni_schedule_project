@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from fastapi import HTTPException
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 

@@ -14,7 +14,6 @@ from app.crud.professors import (
     update_professor,
 )
 from app.db.session import get_session
-from app.models.professor import Professor
 from app.schemas.errors import Error404Response
 from app.schemas.professors import ProfessorCreate, ProfessorRead, ProfessorUpdate
 

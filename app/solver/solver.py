@@ -10,7 +10,7 @@ from ortools.sat.python import cp_model
 from app.schemas.professors import ProfessorRead
 from app.schemas.solver import CourceTimeSlots as SolverCourseTimeSlot
 from app.schemas.solver import Courses as SolverCourse
-from app.schemas.solver import SolverSettings, convert_time_to_min, minutes_to_time
+from app.schemas.solver import SolverSettings, convert_time_to_min
 
 # from data_min import COURSES
 # from data_min2 import COURSES

@@ -1,7 +1,6 @@
 from fastapi import FastAPI  # noqa: I001
 from app.core.config import settings
 from app.db.session import engine
-from app.models import Major
 from sqlmodel import SQLModel
 from app.routes.major import router as major_router
 from app.routes.professors import router as professor_router

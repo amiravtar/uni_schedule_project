@@ -2,7 +2,7 @@ from datetime import time
 from enum import Enum
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, conint, field_validator
+from pydantic import BaseModel, field_validator
 
 from app.schemas.major import MajorRead
 

@@ -1,7 +1,5 @@
-from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 from app.models.course import CourseProfessorLink

@@ -10,11 +10,8 @@ from app.schemas.solver import (
     SolverResualt,
     SolverSolution,
     SolverSolutionCourse,
-    minutes_to_time,
 )
 from app.schemas.solver import Courses as SolverSourses
-from schema.json import ModelResualt, Professor, ResualtCourse, ResualtDict, RootSchema
-from solver.solver import TimeProf
 
 
 def parse_time_range(time_slot: TimeSlot) -> tuple[Weekday, datetime, datetime]:
