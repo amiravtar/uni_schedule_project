@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Any, ClassVar
+
+from pydantic import BaseModel, Field, field_validator
 from pytz import timezone
-from pydantic import BaseModel, field_validator
 
 
 def convert_time_to_min(time: int):  # hhmm
@@ -69,7 +70,7 @@ class Courses(BaseModel):
 
 
 class SolverSettings(BaseModel):
-    number_of_solutions: int
+    number_of_solutions: int = Field(gt=0)
     classroom_limitation: bool = True
     professor_min_max_time_limitation: bool = True
     solver_resualt_name: str
@@ -108,6 +109,8 @@ class SolverSolution(BaseModel):
 
 class SolverResualt(BaseModel):
     Solutions: list[SolverSolution]
+    settings: SolverSettings
+    solver_resualt_history: "SolverHistoryResualtReadLight"
 
 
 class SolverHistoryResualtBase(BaseModel):
@@ -115,16 +118,17 @@ class SolverHistoryResualtBase(BaseModel):
 
 
 class SolverHistoryResualtCreate(SolverHistoryResualtBase):
-    resualt: dict
+    resualt: list
 
 
 class SolverHistoryResualtRead(SolverHistoryResualtBase):
     id: int
     created_at: datetime
-    resualt: dict
+    resualt: list
 
     class Config:
         orm_mode = True  # Allows compatibility with ORM models
+
     @field_validator("created_at", mode="before")
     @classmethod
     def convert_to_local_tz(cls, value: datetime) -> datetime:

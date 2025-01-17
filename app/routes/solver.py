@@ -23,6 +23,7 @@ from app.schemas.solver import (
     SolverHistoryResualtReadLight,
     SolverResualt,
     SolverSettings,
+    SolverSolution,
 )
 from app.schemas.solver import Courses as SolverCourse
 from app.solver.solver import ModelSolver
@@ -61,10 +62,26 @@ def solve(settings: SolverSettings, session: SessionDep):
     model = ModelSolver(data=model_data, settings=settings, professors=dict_professors)
     try:
         data: list[list[tuple[int, CourceTimeSlots, int]]] = model.solve()
-        output_data = parse_solver_output(
+        if len(data) == 0 or len(data[0]) == 0:
+            raise ValueError("No solution found")
+        output_sols: list[SolverSolution] = parse_solver_output(
             sols=data, input_courses=model_data, professors=dict_professors
         )
-        return output_data
+        solver_history_resualt = create_solver_resualt(
+            session=session,
+            solver_resualt_data=SolverHistoryResualtCreate(
+                name=settings.solver_resualt_name, resualt=output_sols
+            ),
+        )
+
+        solver_resualt = SolverResualt(
+            Solutions=output_sols,
+            settings=settings,
+            solver_resualt_history=SolverHistoryResualtReadLight(
+                **solver_history_resualt.model_dump()
+            ),
+        )
+        return solver_resualt
     except ValueError as ex:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,

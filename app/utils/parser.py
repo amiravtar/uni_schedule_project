@@ -85,8 +85,8 @@ def parse_solver_output(
     sols: list[list[tuple[int, CourceTimeSlots, int]]],
     input_courses: list[SolverSourses],
     professors: dict[int, ProfessorRead],
-) -> SolverResualt:
-    solver_resualt: SolverResualt = SolverResualt(Solutions=list())
+) -> list[SolverSolution]:
+    solver_resualt = []
     for sol in sols:
         solver_solution: SolverSolution = SolverSolution(courses=list())
         for course_id, timeslot, score in sol:
@@ -105,7 +105,7 @@ def parse_solver_output(
                 ),
             )
             solver_solution.courses.append(solver_sol_course)
-        solver_resualt.Solutions.append(solver_solution)
+        solver_resualt.append(solver_solution)
     return solver_resualt
 
 

@@ -206,10 +206,6 @@ class ModelSolver:
                 professor_intervals.append(interval_variables[(coruse_id, time)])
             demands = [1] * len(professor_intervals)
             model.add_cumulative(professor_intervals, demands, 1)
-            solver = cp_model.CpSolver()
-            stat = solver.solve(model)
-            if stat != 4:
-                logger.info("badd")
         # maxumize for prefered time slots
         model.maximize(sum(bool_variables_prefered))
         solver = cp_model.CpSolver()
