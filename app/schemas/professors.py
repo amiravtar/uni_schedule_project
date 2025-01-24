@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Any, List, Optional
 
@@ -36,6 +36,38 @@ class ProfessorBase(BaseModel):
     min_hour: int = 0
     preferred_days: List[Weekday] = []
     time_slots: List[TimeSlot] = []
+
+    @field_validator("time_slots", mode="after")
+    @classmethod
+    def merge_time_slots(cls, value: List[TimeSlot]) -> List[TimeSlot]:
+        merged_slots = []
+
+        # Sort time slots by day, then by start_time
+        sorted_slots = sorted(value, key=lambda slot: (slot.day.value, slot.start_time))
+
+        for slot in sorted_slots:
+            if not merged_slots:
+                merged_slots.append(slot)
+                continue
+
+            last_slot:TimeSlot = merged_slots[-1]
+
+            # Convert times to datetime objects for comparison
+            last_end = datetime.strptime(last_slot.end_time, "%H:%M")
+            current_start = datetime.strptime(slot.start_time, "%H:%M")
+            current_end = datetime.strptime(slot.end_time, "%H:%M")
+
+            # Check if the slots overlap or are within 15 minutes of each other
+            if last_slot.day == slot.day and (
+                current_start - last_end <= timedelta(minutes=15)
+            ):
+                # Merge the slots by extending the end time
+                last_slot.end_time = max(last_slot.end_time, slot.end_time)
+            else:
+                # Add the current slot as a new entry
+                merged_slots.append(slot)
+
+        return merged_slots
 
 
 class ProfessorCreate(ProfessorBase):

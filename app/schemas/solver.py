@@ -74,7 +74,7 @@ class SolverSettings(BaseModel):
     classroom_limitation: bool = True
     professor_min_max_time_limitation: bool = True
     solver_resualt_name: str
-
+    debug:bool=False
 
 class SolverInputData(BaseModel):
     courses: list[Courses]

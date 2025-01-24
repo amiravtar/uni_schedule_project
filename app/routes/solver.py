@@ -59,11 +59,12 @@ def solve(settings: SolverSettings, session: SessionDep):
         courses
     )
     dict_professors = {p.id: p for p in professors}
+    settings.debug=True
     model = ModelSolver(data=model_data, settings=settings, professors=dict_professors)
     try:
         data: list[list[tuple[int, CourceTimeSlots, int]]] = model.solve()
         if len(data) == 0 or len(data[0]) == 0:
-            raise ValueError("No solution found")
+            raise ValueError("جوابی پیدا نشد")
         output_sols: list[SolverSolution] = parse_solver_output(
             sols=data, input_courses=model_data, professors=dict_professors
         )

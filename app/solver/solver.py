@@ -24,6 +24,7 @@ class ModelSolver:
         data: list[SolverCourse],
         settings: SolverSettings,
         professors: dict[int, ProfessorRead],
+        debug:bool=False
     ) -> None:
         ids = set()
         for i in data:
@@ -45,7 +46,7 @@ class ModelSolver:
         interval_variables: dict[
             tuple[int, SolverCourseTimeSlot], cp_model.IntervalVar
         ] = {}
-        # basicly time slots that says what time slot is selected for the course
+        # basicly time slots that says what time slot is selected for the cours e
         bool_variables: dict[tuple[int, SolverCourseTimeSlot], cp_model.IntVar] = {}
         # list of time slots that are perefered
         bool_variables_prefered: list[cp_model.IntVar] = list()
@@ -73,7 +74,11 @@ class ModelSolver:
                 course_times.append(bool_variables[(course.id, time)])
             # select exactly 1 time per course‌ (basically you have to select a time for a course)
             model.add_exactly_one(course_times)
-
+            if self.settings.debug:
+                solver = cp_model.CpSolver()
+                ans=solver.solve(model)
+                if ans!=4:
+                    raise ValueError(f"درس {course} باعث خرابی جواب میشود")
         # Creat Group constraints (only 1 class blonging to a group (group_id calculated by semester and major id) can happen at a time)
         group_data: dict[int, list[SolverCourse]] = {
             group: list(items)
@@ -89,7 +94,11 @@ class ModelSolver:
                     group_intervals.append(interval_variables[(course.id, time)])  # noqa: PERF401
             demands = [1] * len(group_intervals)
             model.add_cumulative(group_intervals, demands, 1)
-
+            if self.settings.debug:
+                solver = cp_model.CpSolver()
+                ans=solver.solve(model)
+                if ans!=4:
+                    raise ValueError(f"گروه {group_id} باعت خرابی جواب میشود")
         # Creat professor constraints (a professor cant teach > 1 class at the same time)
         # tuple[solvercoursetimeslot,course_id]
         professors_data: dict[int, list[tuple[SolverCourseTimeSlot, int]]] = {}
@@ -111,7 +120,11 @@ class ModelSolver:
                 professor_intervals.append(interval_variables[(coruse_id, time)])
             demands = [1] * len(professor_intervals)
             model.add_cumulative(professor_intervals, demands, 1)
-
+            if self.settings.debug:
+                solver = cp_model.CpSolver()
+                ans=solver.solve(model)
+                if ans!=4:
+                    raise ValueError(f"استاد با id {self.professors[prof_id]} باعث خرابی جواب میشود")
         # Min and max course hours for professor constraints, ensures is the professor has min max hourse > 0, that they are added to model constraints
         if self.settings.professor_min_max_time_limitation:
             for prof_id, val in professors_data.items():
@@ -136,6 +149,11 @@ class ModelSolver:
                         sum(bool_var * hour for bool_var, hour in zip(bool_vars, hours))
                         >= prof_min_hour * 100
                     )
+                if self.settings.debug:
+                    solver = cp_model.CpSolver()
+                    ans=solver.solve(model)
+                    if ans!=4:
+                        raise ValueError(f"محدودیت ساعت برای استاد {professor_data} باعث خرابی جواب میشود")
         # Add constraints on maximum number on classes that need a spesicif classroom, like computer or architechture classrooms.
         if self.settings.classroom_limitation:
             classroom_data: dict[int, list[SolverCourse]] = {
@@ -156,6 +174,11 @@ class ModelSolver:
                         )
                 demands = [1] * len(classroom_intervals)
                 model.add_cumulative(classroom_intervals, demands, max_classes)
+                if self.settings.debug:
+                    solver = cp_model.CpSolver()
+                    ans=solver.solve(model)
+                    if ans!=4:
+                        raise ValueError(f"محدودیت کلاس برای کلاس های {course.classroom_name} باعث خرابی جواب میشود") # type: ignore
         # maxumize for prefered time slots, maximize the perefered time by the professors
         model.maximize(sum(bool_variables_prefered))
         solver = cp_model.CpSolver()
